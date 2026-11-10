@@ -1,0 +1,237 @@
+{
+  "lab": "flat-with-problems",
+  "domain": "elm.home.arpa",
+  "vlans": [
+    {
+      "id": 10,
+      "name": "trusted",
+      "subnet": "192.168.10.0/24",
+      "dhcp": [
+        "192.168.10.100",
+        "192.168.10.199"
+      ]
+    },
+    {
+      "id": 20,
+      "name": "iot",
+      "subnet": "192.168.20.0/24",
+      "dhcp": [
+        "192.168.20.100",
+        "192.168.20.199"
+      ]
+    },
+    {
+      "id": 30,
+      "name": "dmz",
+      "subnet": "192.168.30.0/24"
+    }
+  ],
+  "devices": [
+    {
+      "name": "isp",
+      "kind": "wan",
+      "evidence": {
+        "grade": "SEEN",
+        "source": "router status page",
+        "date": "2026-11-08"
+      }
+    },
+    {
+      "name": "fw",
+      "kind": "firewall",
+      "ports": [
+        {
+          "id": "wan",
+          "max_mbps": 2500
+        },
+        {
+          "id": "lan",
+          "max_mbps": 2500
+        }
+      ],
+      "ip": [
+        {
+          "vlan": 10,
+          "addr": "192.168.10.1"
+        },
+        {
+          "vlan": 20,
+          "addr": "192.168.20.1"
+        },
+        {
+          "vlan": 30,
+          "addr": "192.168.30.1"
+        }
+      ],
+      "evidence": {
+        "grade": "SEEN",
+        "source": "firewall interfaces page",
+        "date": "2026-11-08"
+      }
+    },
+    {
+      "name": "core-sw",
+      "kind": "switch",
+      "poe_budget_w": 65,
+      "ports": [
+        {
+          "id": "1",
+          "max_mbps": 2500
+        },
+        {
+          "id": "2",
+          "max_mbps": 2500
+        },
+        {
+          "id": "3",
+          "max_mbps": 1000
+        }
+      ],
+      "ip": [
+        {
+          "vlan": 10,
+          "addr": "192.168.10.2"
+        }
+      ],
+      "evidence": {
+        "grade": "SEEN",
+        "source": "switch port table",
+        "date": "2026-11-08"
+      }
+    },
+    {
+      "name": "nas",
+      "kind": "server",
+      "ports": [
+        {
+          "id": "eth0",
+          "max_mbps": 2500
+        }
+      ],
+      "ip": [
+        {
+          "vlan": 10,
+          "addr": "192.168.10.150"
+        },
+        {
+          "vlan": 30,
+          "addr": "192.168.30.10"
+        }
+      ],
+      "evidence": {
+        "grade": "SEEN",
+        "source": "ip -br addr",
+        "date": "2026-11-08"
+      }
+    },
+    {
+      "name": "ap-hall",
+      "kind": "access-point",
+      "ports": [
+        {
+          "id": "eth0",
+          "max_mbps": 1000
+        }
+      ],
+      "ip": [
+        {
+          "vlan": 10,
+          "addr": "192.168.10.2"
+        }
+      ],
+      "evidence": {
+        "grade": "GUESS",
+        "date": "2026-03-01"
+      }
+    },
+    {
+      "name": "printer",
+      "kind": "printer",
+      "ip": [
+        {
+          "vlan": 20,
+          "addr": "192.168.21.5"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "a": "isp:lan1",
+      "b": "fw:wan",
+      "speed_mbps": 1000
+    },
+    {
+      "a": "fw:lan",
+      "b": "core-sw:1",
+      "speed_mbps": 2500,
+      "a_vlans": {
+        "untagged": 10,
+        "tagged": [
+          20,
+          30
+        ]
+      },
+      "b_vlans": {
+        "untagged": 10,
+        "tagged": [
+          20,
+          30
+        ]
+      }
+    },
+    {
+      "a": "core-sw:2",
+      "b": "nas:eth0",
+      "speed_mbps": 2500,
+      "a_vlans": {
+        "untagged": 10,
+        "tagged": [
+          30
+        ]
+      },
+      "b_vlans": {
+        "untagged": 10,
+        "tagged": []
+      }
+    },
+    {
+      "a": "core-sw:3",
+      "b": "ap-hall:eth0",
+      "speed_mbps": 1000,
+      "poe_w": 60,
+      "a_vlans": {
+        "untagged": 10,
+        "tagged": [
+          20
+        ]
+      },
+      "b_vlans": {
+        "untagged": 10,
+        "tagged": [
+          20
+        ]
+      }
+    }
+  ],
+  "exposed": [
+    {
+      "device": "nas",
+      "port": 443,
+      "proto": "tcp",
+      "reason": "reverse proxy for photos, behind login"
+    }
+  ],
+  "forwards": [
+    {
+      "wan_port": 443,
+      "to": "nas",
+      "to_port": 443
+    },
+    {
+      "wan_port": 8080,
+      "to": "core-sw",
+      "to_port": 80
+    }
+  ]
+}
